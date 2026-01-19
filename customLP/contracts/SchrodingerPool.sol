@@ -1,165 +1,127 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-/**
- * @title SchrodingerPool
- * @notice A time-fragmented AMM with temporal invariant tracking.
- * @dev VULNERABILITY: Temporal Arbitrage.
- * Swaps are validated against the snapshot of (e-1), while liquidity is added at (e).
- */
-contract SchrodingerPool {
-    // Packed storage to simulate "temporal leaks" mentioned in the prompt
-    struct PoolState {
-        uint128 reserve0;
-        uint128 reserve1;
-        uint64 lastTimestamp;
-        uint32 currentEpoch;
-    }
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-    PoolState public state;
+contract SchrodingerPool {
+    // 1. Explicit State Variables
     address public immutable token0;
     address public immutable token1;
-
+    
+    uint256 public reserve0;
+    uint256 public reserve1;
     uint256 public totalSupply;
+    
     mapping(address => uint256) public balanceOf;
     
-    // Historical snapshots
-    mapping(uint256 => uint256) public epochLiquidity; // L_e snapshot
-    uint256 public constant EPOCH_DURATION = 12 seconds;
-    uint256 public constant DECAY_FACTOR = 9950; // 0.5% decay
-    uint256 public constant PRECISION = 10000;
+    uint256 public currentEpoch;
+    uint256 public constant EPOCH_DURATION = 12; // 12 seconds
+    uint256 public epochStartTime;
+    
+    mapping(uint256 => uint256) public epochLiquidity;
+    
+    uint256 public constant DECAY_FACTOR = 9950; 
+    uint256 public constant DECAY_DENOMINATOR = 10000;
 
-    event Mint(address indexed to, uint256 amount0, uint256 amount1, uint256 liquidity);
-    event Burn(address indexed to, uint256 amount0, uint256 amount1, uint256 liquidity);
-    event Swap(address indexed to, uint256 in0, uint256 in1, uint256 out0, uint256 out1);
-
-    constructor(address _t0, address _t1) {
-        token0 = _t0;
-        token1 = _t1;
-        state.lastTimestamp = uint64(block.timestamp);
+    // 2. Constructor
+    constructor(address _token0, address _token1) {
+        require(_token0 != address(0) && _token1 != address(0), "Zero address");
+        token0 = _token0;
+        token1 = _token1;
+        epochStartTime = block.timestamp;
     }
 
+    // 3. Modifier
     modifier updateEpoch() {
-        uint32 newEpoch = uint32((block.timestamp - state.lastTimestamp) / EPOCH_DURATION);
-        if (newEpoch > state.currentEpoch) {
-            // Snapshot the liquidity of the epoch that just ended
-            epochLiquidity[state.currentEpoch] = _sqrt(uint256(state.reserve0) * state.reserve1);
-            state.currentEpoch = newEpoch;
+        uint256 elapsed = block.timestamp - epochStartTime;
+        uint256 newEpoch = elapsed / EPOCH_DURATION;
+        if (newEpoch > currentEpoch) {
+            // This line uses the global reserve0 and reserve1
+            epochLiquidity[currentEpoch] = uint256(sqrt(reserve0 * reserve1));
+            currentEpoch = newEpoch;
         }
         _;
     }
 
-    /**
-     * @notice LP Minting (Uses Current Epoch e)
-     */
-    function mint(uint256 amount0, uint256 amount1) external updateEpoch returns (uint256 liquidity) {
-        _transferFrom(token0, msg.sender, amount0);
-        _transferFrom(token1, msg.sender, amount1);
-
+    // 4. Core Functions
+    function mint(address to, uint256 amount0, uint256 amount1) external updateEpoch returns (uint256 liquidity) {
+        IERC20(token0).transferFrom(msg.sender, address(this), amount0);
+        IERC20(token1).transferFrom(msg.sender, address(this), amount1);
+        
         uint256 _totalSupply = totalSupply;
         if (_totalSupply == 0) {
-            liquidity = _sqrt(amount0 * amount1);
+            liquidity = sqrt(amount0 * amount1);
         } else {
-            liquidity = _min((amount0 * _totalSupply) / state.reserve0, (amount1 * _totalSupply) / state.reserve1);
+            // Accessing reserve0 and reserve1 directly
+            uint256 l0 = (amount0 * _totalSupply) / reserve0;
+            uint256 l1 = (amount1 * _totalSupply) / reserve1;
+            liquidity = l0 < l1 ? l0 : l1;
         }
-
-        balanceOf[msg.sender] += liquidity;
-        totalSupply += liquidity;
-        state.reserve0 += uint128(amount0);
-        state.reserve1 += uint128(amount1);
-
-        emit Mint(msg.sender, amount0, amount1, liquidity);
+        
+        balanceOf[to] += liquidity;
+        totalSupply = _totalSupply + liquidity;
+        reserve0 += amount0;
+        reserve1 += amount1;
     }
 
-    /**
-     * @notice LP Burning (Uses Projected Next Epoch e+1)
-     */
-    function burn(uint256 liquidity) external updateEpoch returns (uint256 amount0, uint256 amount1) {
-        require(balanceOf[msg.sender] >= liquidity, "Low balance");
-        
+    function burn(address to, uint256 liquidity) external updateEpoch returns (uint256 amount0, uint256 amount1) {
+        require(balanceOf[msg.sender] >= liquidity, "Low LP balance");
         uint256 _totalSupply = totalSupply;
+
+        amount0 = (liquidity * reserve0) / _totalSupply;
+        amount1 = (liquidity * reserve1) / _totalSupply;
         
-        // Projected value: Applying decay factor for the "future" claim
-        amount0 = (liquidity * state.reserve0) / _totalSupply;
-        amount1 = (liquidity * state.reserve1) / _totalSupply;
-        
-        // Temporal Adjustment: Payout is scaled by the decay of the projected epoch
-        amount0 = (amount0 * DECAY_FACTOR) / PRECISION;
-        amount1 = (amount1 * DECAY_FACTOR) / PRECISION;
+        // Decay logic
+        amount0 = (amount0 * DECAY_FACTOR) / DECAY_DENOMINATOR;
+        amount1 = (amount1 * DECAY_FACTOR) / DECAY_DENOMINATOR;
 
         balanceOf[msg.sender] -= liquidity;
-        totalSupply -= _totalSupply > liquidity ? liquidity : _totalSupply;
-        state.reserve0 -= uint128(amount0);
-        state.reserve1 -= uint128(amount1);
+        totalSupply = _totalSupply - liquidity;
+        reserve0 -= amount0;
+        reserve1 -= amount1;
 
-        _transfer(token0, msg.sender, amount0);
-        _transfer(token1, msg.sender, amount1);
-        
-        emit Burn(msg.sender, amount0, amount1, liquidity);
+        IERC20(token0).transfer(to, amount0);
+        IERC20(token1).transfer(to, amount1);
     }
 
-    /**
-     * @notice Swap (Uses PREVIOUS Epoch e-1 for Invariant)
-     */
     function swap(uint256 amount0Out, uint256 amount1Out, address to) external updateEpoch {
-        require(amount0Out < state.reserve0 && amount1Out < state.reserve1, "Insuff. Liquidity");
+        require(amount0Out < reserve0 && amount1Out < reserve1, "Low reserves");
 
-        // Optimistic transfers
-        if (amount0Out > 0) _transfer(token0, to, amount0Out);
-        if (amount1Out > 0) _transfer(token1, to, amount1Out);
-
-        uint256 balance0 = _balance(token0);
-        uint256 balance1 = _balance(token1);
-
-        // THE CATCH: Check invariant against previous epoch's liquidity snapshot
-        // If we are in epoch 0, we use current reserves as a fallback
-        uint256 kRequired;
-        if (state.currentEpoch > 0) {
-            uint256 prevL = epochLiquidity[state.currentEpoch - 1];
-            kRequired = prevL * prevL;
+        if (amount0Out > 0) IERC20(token0).transfer(to, amount0Out);
+        if (amount1Out > 0) IERC20(token1).transfer(to, amount1Out);
+        
+        uint256 b0 = IERC20(token0).balanceOf(address(this));
+        uint256 b1 = IERC20(token1).balanceOf(address(this));
+        
+        uint256 kReq;
+        if (currentEpoch > 0 && epochLiquidity[currentEpoch - 1] > 0) {
+            kReq = epochLiquidity[currentEpoch - 1] * epochLiquidity[currentEpoch - 1];
         } else {
-            kRequired = uint256(state.reserve0) * state.reserve1;
+            kReq = reserve0 * reserve1;
         }
 
-        // Standard 0.3% fee adjustment
-        uint256 amount0In = balance0 > (state.reserve0 - amount0Out) ? balance0 - (state.reserve0 - amount0Out) : 0;
-        uint256 amount1In = balance1 > (state.reserve1 - amount1Out) ? balance1 - (state.reserve1 - amount1Out) : 0;
-        
-        uint256 balance0Adj = (balance0 * 1000) - (amount0In * 3);
-        uint256 balance1Adj = (balance1 * 1000) - (amount1In * 3);
+        require(b0 * b1 >= kReq, "K_FAIL");
 
-        require(balance0Adj * balance1Adj >= kRequired * 1000000, "K_TEMPORAL_FAIL");
-
-        state.reserve0 = uint128(balance0);
-        state.reserve1 = uint128(balance1);
-        emit Swap(to, amount0In, amount1In, amount0Out, amount1Out);
+        reserve0 = b0;
+        reserve1 = b1;
     }
 
-    // --- Helpers ---
-    function _sqrt(uint y) internal pure returns (uint z) {
-        if (y > 3) { z = y; uint x = y / 2 + 1; while (x < z) { z = x; x = (y / x + x) / 2; } } else if (y != 0) { z = 1; }
-    }
-    function _min(uint x, uint y) internal pure returns (uint) { return x < y ? x : y; }
-    function _transfer(address t, address to, uint v) internal {
-        (bool s,) = t.call(abi.encodeWithSignature("transfer(address,uint256)", to, v));
-        require(s);
-    }
-    function _transferFrom(address t, address f, uint v) internal {
-        (bool s,) = t.call(abi.encodeWithSignature("transferFrom(address,address,uint256)", f, address(this), v));
-        require(s);
-    }
-    function _balance(address t) internal view returns (uint) {
-        return IERC20(t).balanceOf(address(this));
-    }
-     function getReserves() external view returns (uint256, uint256, uint256) {
+    // 5. Getter (Flattened returns to avoid naming collisions)
+    function getReserves() external view returns (uint256, uint256, uint256) {
         return (reserve0, reserve1, currentEpoch);
     }
 
-    function _sqrt(uint y) internal pure returns (uint z) {
-        if (y > 3) { z = y; uint x = y / 2 + 1; while (x < z) { z = x; x = (y / x + x) / 2; } } else if (y != 0) { z = 1; }
+    // 6. Math Helpers
+    function sqrt(uint256 y) internal pure returns (uint256 z) {
+        if (y > 3) {
+            z = y;
+            uint256 x = y / 2 + 1;
+            while (x < z) {
+                z = x;
+                x = (y / x + x) / 2;
+            }
+        } else if (y != 0) {
+            z = 1;
+        }
     }
-    function _min(uint x, uint y) internal pure returns (uint) { return x < y ? x : y; }
-
 }
-
-interface IERC20 { function balanceOf(address a) external view returns (uint); }
