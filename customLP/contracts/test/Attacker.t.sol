@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.20;
 
 import "../SchrodingerPool.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -17,7 +17,7 @@ contract Attacker {
 
     function exploit() external {
         (uint256 r0, uint256 r1, ) = pool.getReserves();
-        
+
         // 1. Approve
         t0.approve(address(pool), type(uint256).max);
         t1.approve(address(pool), type(uint256).max);

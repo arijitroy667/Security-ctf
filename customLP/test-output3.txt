@@ -1,0 +1,91 @@
+﻿node.exe : [33m[1mWARNING:[22m[39m You 
+are currently using Node.js v23.4.0, which 
+is not supported by Hardhat. This can lead 
+to unexpected behavior. See 
+https://v2.hardhat.org/nodejs-versions
+At C:\Program Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified:  
+   ([33m[1mWARNIN...nodejs-versions:Strin  
+  g) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandE 
+   rror
+ 
+
+
+[1m[33mWarning:[39m[22m Unused local 
+variable.
+  --> contracts/test/Attacker.t.sol:19:22:
+   |
+19 |         (uint256 r0, uint256 r1, ) = 
+pool.getReserves();
+   |                      ^^^^^^^^^^
+
+
+Compiled 4 Solidity files successfully (evm target: paris).
+
+
+  Schr├╢dinger Pool CTF
+    1) Should allow the player to drain >70% using Attacker.sol
+
+  Schrodinger Pool CTF - Epoch K-Value Exploit
+    Contract Deployment
+      Γ£ö Should deploy with correct token addresses (51ms)
+      Γ£ö Should start at epoch 0
+      Γ£ö Should have correct constants
+    Liquidity Operations
+      Γ£ö Should mint LP tokens correctly for first depositor
+      Γ£ö Should burn LP tokens with 0.5% decay
+    Epoch Mechanics
+      Γ£ö Should advance epoch after EPOCH_DURATION
+      Γ£ö Should record epochLiquidity on epoch change
+    Swap Mechanics
+      Γ£ö Should allow valid swap within K bounds
+      Γ£ö Should revert if K requirement not met
+    ≡ƒöÑ Epoch-Based K Exploit
+      Γ£ö Should exploit epoch boundary for favorable swap
+
+  ≡ƒôè EXPLOIT ANALYSIS:
+  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ
+  Normal swap output:   90.0 ALPHA
+  Attacker swap output: 90.0 ALPHA
+  Pool K before attack: 100000000000000000000000000000000000000000000
+  Attacker successfully extracted from inflated pool using old K!
+      Γ£ö Should show profit difference between normal and exploited swap
+
+  ≡ƒÄ» COMPLETE ATTACK SIMULATION
+  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ  ΓòÉ
+
+  Phase 1: Pool initialized with 10,000 each token
+  Phase 2: Epoch changed, old liquidity snapshot recorded
+  Phase 3: Attacker deposits 40,000 each (pool now 50,000)
+  Phase 4: Swap 5000 BETA for 4500 ALPHA using old K
+  Phase 5: Burn all LP tokens (0.5% decay applied)
+
+  ≡ƒôè ATTACK RESULTS:
+  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ
+  ALPHA gained: 718.0
+  BETA lost:    1220.000000000000000001
+      Γ£ö Should demonstrate complete attack flow with profit
+    Edge Cases
+      Γ£ö Should handle zero reserves gracefully in epoch 0
+      Γ£ö Should fall back to current K if no epoch liquidity exists
+    Vulnerability Documentation
+      Γ£ö Should document the epoch K exploit vector
+      Γ£ö Should document mitigations
+
+
+  16 passing (656ms)
+  1 failing
+
+  1) Schr├╢dinger Pool CTF
+       Should allow the player to drain >70% using Attacker.sol:
+     Error: incorrect number of arguments to constructor
+      at ContractFactory.getDeployTransaction (node_modules\ethers\src.ts\contract\factory.ts:87:19)
+      at ContractFactory.deploy (node_modules\ethers\src.ts\contract\factory.ts:105:31)
+      at deployFixture (test\Exploit.ts:11:28)
+      at async Context.<anonymous> (test\Exploit.ts:29:38)
+
+
+

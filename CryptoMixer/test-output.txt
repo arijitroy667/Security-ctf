@@ -1,0 +1,175 @@
+﻿node.exe : 
+[33m[1mWARNING:[22m[39m You 
+are currently using Node.js 
+v23.4.0, which is not supported 
+by Hardhat. This can lead to 
+unexpected behavior. See https:/
+/v2.hardhat.org/nodejs-versions
+At C:\Program 
+Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS 
+$args
++   
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : N 
+   otSpecified: ([33m[1mWARN  
+  IN...nodejs-versions:String   
+ ) [], RemoteException
+    + FullyQualifiedErrorId : N 
+   ativeCommandError
+ 
+
+
+Compiled 5 Solidity files successfully (evm target: paris).
+
+
+  Crypto Mixer CTF - Timing Analysis
+    Contract Deployment
+      1) Should deploy mixer with correct denomination
+      2) Should deploy analyzer linked to mixer
+    Basic Mixer Operations
+      3) Should allow deposit with correct amount
+      4) Should reject deposit with wrong amount
+      5) Should allow withdrawal with correct secret
+      6) Should reject double withdrawal
+    Block Transaction Tracking
+      7) Should track transaction count per block
+      8) Should identify isolated blocks
+      Γ£ö Should NOT identify multi-tx blocks as isolated
+    ≡ƒöÑ Timing Analysis Exploit
+      9) Should detect isolated withdrawal as privacy leak
+      10) Should trace all isolated transactions in complex scenario
+      11) Should calculate privacy breach rate
+    Edge Cases
+      Γ£ö Should handle zero withdrawals in analysis
+      Γ£ö Should correctly identify all safe transactions
+    Vulnerability Documentation
+      Γ£ö Should document the timing analysis attack vector
+      Γ£ö Should document mitigations
+
+
+  5 passing (611ms)
+  11 failing
+
+  1) Crypto Mixer CTF - Timing Analysis
+       Contract Deployment
+         Should deploy mixer with correct denomination:
+     Error: could not decode result data (value="0x", info={ "method": "DENOMINATION", "signature": "DENOMINATION()" }, code=BAD_DATA, version=6.16.0)
+      at makeError (node_modules\ethers\src.ts\utils\errors.ts:698:21)
+      at assert (node_modules\ethers\src.ts\utils\errors.ts:719:25)
+      at Interface.decodeFunctionResult (node_modules\ethers\src.ts\abi\interface.ts:916:15)
+      at staticCallResult (node_modules\ethers\src.ts\contract\contract.ts:346:35)
+      at async staticCall (node_modules\ethers\src.ts\contract\contract.ts:303:24)
+      at async Proxy.DENOMINATION (node_modules\ethers\src.ts\contract\contract.ts:351:41)
+      at async Context.<anonymous> (test\TimingAnalysis.test.ts:45:14)
+
+  2) Crypto Mixer CTF - Timing Analysis
+       Contract Deployment
+         Should deploy analyzer linked to mixer:
+     Error: could not decode result data (value="0x", info={ "method": "mixer", "signature": "mixer()" }, code=BAD_DATA, version=6.16.0)
+      at makeError (node_modules\ethers\src.ts\utils\errors.ts:698:21)
+      at assert (node_modules\ethers\src.ts\utils\errors.ts:719:25)
+      at Interface.decodeFunctionResult (node_modules\ethers\src.ts\abi\interface.ts:916:15)
+      at staticCallResult (node_modules\ethers\src.ts\contract\contract.ts:346:35)
+      at async staticCall (node_modules\ethers\src.ts\contract\contract.ts:303:24)
+      at async Proxy.mixer (node_modules\ethers\src.ts\contract\contract.ts:351:41)
+      at async Context.<anonymous> (test\TimingAnalysis.test.ts:50:14)
+
+  3) Crypto Mixer CTF - Timing Analysis
+       Basic Mixer Operations
+         Should allow deposit with correct amount:
+     Error: could not decode result data (value="0x", info={ "method": "mixerBalance", "signature": "mixerBalance()" }, code=BAD_DATA, version=6.16.0)
+      at makeError (node_modules\ethers\src.ts\utils\errors.ts:698:21)
+      at assert (node_modules\ethers\src.ts\utils\errors.ts:719:25)
+      at Interface.decodeFunctionResult (node_modules\ethers\src.ts\abi\interface.ts:916:15)
+      at staticCallResult (node_modules\ethers\src.ts\contract\contract.ts:346:35)
+      at async staticCall (node_modules\ethers\src.ts\contract\contract.ts:303:24)
+      at async Proxy.mixerBalance (node_modules\ethers\src.ts\contract\contract.ts:351:41)
+      at async Context.<anonymous> (test\TimingAnalysis.test.ts:61:14)
+
+  4) Crypto Mixer CTF - Timing Analysis
+       Basic Mixer Operations
+         Should reject deposit with wrong amount:
+     AssertionError: Expected transaction to be reverted with reason 'Wrong denomination', but it didn't revert
+      at async Context.<anonymous> (test\TimingAnalysis.test.ts:69:7)
+
+  5) Crypto Mixer CTF - Timing Analysis
+       Basic Mixer Operations
+         Should allow withdrawal with correct secret:
+
+      AssertionError: expected 0 to equal 1000000000000000000.
+      + expected - actual
+
+      -0
+      +1000000000000000000
+      
+      at Context.<anonymous> (test\TimingAnalysis.test.ts:84:53)
+
+  6) Crypto Mixer CTF - Timing Analysis
+       Basic Mixer Operations
+         Should reject double withdrawal:
+     AssertionError: Expected transaction to be reverted with reason 'Already withdrawn', but it didn't revert
+      at async Context.<anonymous> (test\TimingAnalysis.test.ts:94:7)
+
+  7) Crypto Mixer CTF - Timing Analysis
+       Block Transaction Tracking
+         Should track transaction count per block:
+
+      AssertionError: expected 0 to equal 2.
+      + expected - actual
+
+      -0
+      +2
+      
+      at Context.<anonymous> (test\TimingAnalysis.test.ts:114:60)
+
+  8) Crypto Mixer CTF - Timing Analysis
+       Block Transaction Tracking
+         Should identify isolated blocks:
+
+      AssertionError: expected false to be true
+      + expected - actual
+
+      -false
+      +true
+      
+      at Context.<anonymous> (test\TimingAnalysis.test.ts:125:62)
+
+  9) Crypto Mixer CTF - Timing Analysis
+       ≡ƒöÑ Timing Analysis Exploit
+         Should detect isolated withdrawal as privacy leak:
+
+      AssertionError: expected 0 to equal 1.
+      + expected - actual
+
+      -0
+      +1
+      
+      at Context.<anonymous> (test\TimingAnalysis.test.ts:171:30)
+
+  10) Crypto Mixer CTF - Timing Analysis
+       ≡ƒöÑ Timing Analysis Exploit
+         Should trace all isolated transactions in complex scenario:
+
+      AssertionError: expected 0 to equal 2.
+      + expected - actual
+
+      -0
+      +2
+      
+      at Context.<anonymous> (test\TimingAnalysis.test.ts:212:30)
+
+  11) Crypto Mixer CTF - Timing Analysis
+       ≡ƒöÑ Timing Analysis Exploit
+         Should calculate privacy breach rate:
+
+      AssertionError: expected +0 to equal 50
+      + expected - actual
+
+      -0
+      +50
+      
+      at Context.<anonymous> (test\TimingAnalysis.test.ts:260:29)
+
+
+

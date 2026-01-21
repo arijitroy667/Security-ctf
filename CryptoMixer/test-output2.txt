@@ -1,0 +1,126 @@
+﻿node.exe : 
+[33m[1mWARNING:[22m[39m You 
+are currently using Node.js 
+v23.4.0, which is not supported 
+by Hardhat. This can lead to 
+unexpected behavior. See https:/
+/v2.hardhat.org/nodejs-versions
+At C:\Program 
+Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS 
+$args
++   
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : N 
+   otSpecified: ([33m[1mWARN  
+  IN...nodejs-versions:String   
+ ) [], RemoteException
+    + FullyQualifiedErrorId : N 
+   ativeCommandError
+ 
+
+
+
+
+  Crypto Mixer CTF - Timing Analysis
+    Contract Deployment
+      Γ£ö Should deploy mixer with correct denomination (480ms)
+      Γ£ö Should deploy analyzer linked to mixer
+    Basic Mixer Operations
+      Γ£ö Should allow deposit with correct amount
+      Γ£ö Should reject deposit with wrong amount
+      Γ£ö Should allow withdrawal with correct secret
+      Γ£ö Should reject double withdrawal
+    Block Transaction Tracking
+      1) Should track transaction count per block
+      Γ£ö Should identify isolated blocks
+      2) Should NOT identify multi-tx blocks as isolated
+    ≡ƒöÑ Timing Analysis Exploit
+      3) Should detect isolated withdrawal as privacy leak
+      4) Should trace all isolated transactions in complex scenario
+      5) Should calculate privacy breach rate
+    Edge Cases
+      Γ£ö Should handle zero withdrawals in analysis
+      6) Should correctly identify all safe transactions
+    Vulnerability Documentation
+      Γ£ö Should document the timing analysis attack vector
+      Γ£ö Should document mitigations
+
+
+  10 passing (571ms)
+  6 failing
+
+  1) Crypto Mixer CTF - Timing Analysis
+       Block Transaction Tracking
+         Should track transaction count per block:
+
+      AssertionError: expected 1 to equal 2.
+      + expected - actual
+
+      -1
+      +2
+      
+      at Context.<anonymous> (test\TimingAnalysis.test.ts:114:60)
+
+  2) Crypto Mixer CTF - Timing Analysis
+       Block Transaction Tracking
+         Should NOT identify multi-tx blocks as isolated:
+
+      AssertionError: expected true to be false
+      + expected - actual
+
+      -true
+      +false
+      
+      at Context.<anonymous> (test\TimingAnalysis.test.ts:140:62)
+
+  3) Crypto Mixer CTF - Timing Analysis
+       ≡ƒöÑ Timing Analysis Exploit
+         Should detect isolated withdrawal as privacy leak:
+
+      AssertionError: expected 3 to equal 1.
+      + expected - actual
+
+      -3
+      +1
+      
+      at Context.<anonymous> (test\TimingAnalysis.test.ts:171:30)
+
+  4) Crypto Mixer CTF - Timing Analysis
+       ≡ƒöÑ Timing Analysis Exploit
+         Should trace all isolated transactions in complex scenario:
+
+      AssertionError: expected 4 to equal 2.
+      + expected - actual
+
+      -4
+      +2
+      
+      at Context.<anonymous> (test\TimingAnalysis.test.ts:212:30)
+
+  5) Crypto Mixer CTF - Timing Analysis
+       ≡ƒöÑ Timing Analysis Exploit
+         Should calculate privacy breach rate:
+
+      AssertionError: expected 100 to equal 50
+      + expected - actual
+
+      -100
+      +50
+      
+      at Context.<anonymous> (test\TimingAnalysis.test.ts:260:29)
+
+  6) Crypto Mixer CTF - Timing Analysis
+       Edge Cases
+         Should correctly identify all safe transactions:
+
+      AssertionError: expected 2 to equal 0.
+      + expected - actual
+
+      -2
+      +0
+      
+      at Context.<anonymous> (test\TimingAnalysis.test.ts:297:50)
+
+
+

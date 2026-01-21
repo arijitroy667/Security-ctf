@@ -1,0 +1,26 @@
+﻿node.exe : [33m[1mWARNING:[22m[39m You 
+are currently using Node.js v23.4.0, which 
+is not supported by Hardhat. This can lead 
+to unexpected behavior. See 
+https://v2.hardhat.org/nodejs-versions
+At C:\Program Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified:  
+   ([33m[1mWARNIN...nodejs-versions:Strin  
+  g) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandE 
+   rror
+ 
+
+
+Downloading compiler 0.8.24
+[31m[1mError[22m[39m 
+[31m[1mHH501:[22m[39m Couldn't download 
+compiler version 0.8.24+commit.e11b9ed9. 
+Please check your internet connection and 
+try again.
+
+For more info go to 
+https://v2.hardhat.org/HH501 or run Hardhat 
+with --show-stack-traces

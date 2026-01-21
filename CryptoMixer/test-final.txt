@@ -1,0 +1,51 @@
+﻿node.exe : 
+[33m[1mWARNING:[22m[39m You 
+are currently using Node.js 
+v23.4.0, which is not supported 
+by Hardhat. This can lead to 
+unexpected behavior. See https:/
+/v2.hardhat.org/nodejs-versions
+At C:\Program 
+Files\nodejs\npx.ps1:29 char:3
++   & $NODE_EXE $NPX_CLI_JS 
+$args
++   
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : N 
+   otSpecified: ([33m[1mWARN  
+  IN...nodejs-versions:String   
+ ) [], RemoteException
+    + FullyQualifiedErrorId : N 
+   ativeCommandError
+ 
+
+
+
+
+  Crypto Mixer CTF - Timing Analysis
+    Contract Deployment
+      Γ£ö Should deploy mixer with correct denomination (483ms)
+      Γ£ö Should deploy analyzer linked to mixer
+    Basic Mixer Operations
+      Γ£ö Should allow deposit with correct amount
+      Γ£ö Should reject deposit with wrong amount
+      Γ£ö Should allow withdrawal with correct secret
+      Γ£ö Should reject double withdrawal
+    Block Transaction Tracking
+      Γ£ö Should track transaction count per block
+      Γ£ö Should identify isolated blocks
+      Γ£ö Should NOT identify multi-tx blocks as isolated
+    ≡ƒöÑ Timing Analysis Exploit
+      Γ£ö Should detect isolated withdrawal as privacy leak
+      Γ£ö Should trace all isolated transactions in complex scenario
+      Γ£ö Should calculate privacy breach rate
+    Edge Cases
+      Γ£ö Should handle zero withdrawals in analysis
+      Γ£ö Should correctly identify all safe transactions
+    Vulnerability Documentation
+      Γ£ö Should document the timing analysis attack vector
+      Γ£ö Should document mitigations
+
+
+  16 passing (575ms)
+
