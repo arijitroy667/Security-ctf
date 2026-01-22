@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Contract Deployment DApp</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap"
+			rel="stylesheet"
+		/>
+		<style>
+			:root {
+				--bg: #060922;
+				--bg-accent: #10183f;
+				--card: rgba(7, 10, 31, 0.9);
+				--primary: #3ce3c5;
+				--primary-dark: #21a78e;
+				--text: #f4f6fb;
+				--muted: #7e88aa;
+				--danger: #ff6b7f;
+				--success: #4affa7;
+			}
+
+			* {
+				box-sizing: border-box;
+			}
+
+			body {
+				margin: 0;
+				min-height: 100vh;
+				font-family: "Space Grotesk", "Segoe UI", sans-serif;
+				color: var(--text);
+				background: radial-gradient(circle at top, #142056, var(--bg));
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				padding: 2rem;
+			}
+
+			.card {
+				width: min(520px, 100%);
+				background: var(--card);
+				border: 1px solid rgba(255, 255, 255, 0.08);
+				border-radius: 20px;
+				padding: 2.5rem;
+				box-shadow: 0 25px 60px rgba(3, 4, 17, 0.65);
+				position: relative;
+				overflow: hidden;
+			}
+
+			.card::after {
+				content: "";
+				position: absolute;
+				top: -80px;
+				right: -80px;
+				width: 200px;
+				height: 200px;
+				background: rgba(60, 227, 197, 0.12);
+				filter: blur(10px);
+				border-radius: 50%;
+				pointer-events: none;
+			}
+
+			h1 {
+				margin: 0 0 0.75rem;
+				font-size: clamp(1.8rem, 3vw, 2.4rem);
+				letter-spacing: 0.04em;
+			}
+
+			p {
+				margin: 0 0 2.5rem;
+				color: var(--muted);
+				line-height: 1.5;
+			}
+
+			.wallet-info {
+				background: rgba(6, 9, 34, 0.85);
+				border: 1px solid rgba(255, 255, 255, 0.08);
+				border-radius: 12px;
+				padding: 1rem;
+				margin-bottom: 1.5rem;
+				font-family: monospace;
+				font-size: 0.9rem;
+			}
+
+			.wallet-info .address {
+				color: var(--primary);
+				word-break: break-all;
+			}
+
+			.wallet-info .balance {
+				color: var(--success);
+				margin-top: 0.5rem;
+			}
+
+			button {
+				width: 100%;
+				margin-top: 1rem;
+				padding: 1rem 1.25rem;
+				border: none;
+				border-radius: 14px;
+				background: linear-gradient(120deg, var(--primary), #4affa7);
+				color: #041214;
+				font-weight: 700;
+				text-transform: uppercase;
+				letter-spacing: 0.08em;
+				cursor: pointer;
+				transition: transform 0.2s ease, box-shadow 0.2s ease;
+			}
+
+			button:disabled {
+				cursor: not-allowed;
+				opacity: 0.6;
+				box-shadow: none;
+			}
+
+			button:not(:disabled):hover {
+				transform: translateY(-2px);
+				box-shadow: 0 15px 35px rgba(60, 227, 197, 0.25);
+			}
+
+			button.connect {
+				background: linear-gradient(120deg, #667eea, #764ba2);
+			}
+
+			button.deploy {
+				background: linear-gradient(120deg, var(--primary), #4affa7);
+			}
+
+			.status {
+				margin-top: 1.25rem;
+				min-height: 1.25rem;
+				font-weight: 600;
+				color: var(--text);
+			}
+
+			.status.success {
+				color: var(--success);
+			}
+
+			.status.error {
+				color: var(--danger);
+			}
+
+			.status.loading {
+				color: var(--muted);
+			}
+
+			.response-box {
+				margin-top: 0.5rem;
+				padding: 0.85rem 1rem;
+				border-radius: 12px;
+				background: rgba(6, 9, 34, 0.85);
+				border: 1px solid rgba(255, 255, 255, 0.08);
+				font-family: "Space Grotesk", monospace;
+				font-size: 0.9rem;
+				white-space: pre-wrap;
+				word-break: break-word;
+				min-height: 2.5rem;
+			}
+
+			.fee-info {
+				background: rgba(255, 107, 127, 0.1);
+				border: 1px solid rgba(255, 107, 127, 0.3);
+				border-radius: 8px;
+				padding: 0.75rem;
+				margin: 1rem 0;
+				font-size: 0.85rem;
+				color: var(--muted);
+			}
+
+			.fee-info strong {
+				color: var(--danger);
+			}
+
+			.hidden {
+				display: none;
+			}
+
+			.loading-spinner {
+				display: inline-block;
+				width: 16px;
+				height: 16px;
+				border: 2px solid rgba(255, 255, 255, 0.3);
+				border-radius: 50%;
+				border-top-color: var(--primary);
+				animation: spin 1s ease-in-out infinite;
+				margin-right: 8px;
+			}
+
+			@keyframes spin {
+				to { transform: rotate(360deg); }
+			}
+		</style>
+	</head>
+	<body>
+		<main class="card">
+			<h1>Contract Deployment DApp</h1>
+			<p>Deploy your own smart contract with CREATE2 deterministic deployment. Pay a small fee and receive your contract address instantly.</p>
+			
+			<div id="walletInfo" class="wallet-info hidden">
+				<div>Connected: <span class="address" id="connectedAddress"></span></div>
+				<div class="balance">Balance: <span id="balance"></span> ETH</div>
+			</div>
+
+			<div id="connectSection">
+				<button id="connectButton" class="connect">Connect MetaMask</button>
+			</div>
+
+			<div id="deploySection" class="hidden">
+				<div class="fee-info">
+					<strong>⚠️ Deployment Fee:</strong> 0.01 ETH required for contract deployment<br>
+					<strong>💰 Deployer Address:</strong> <span id="deployerAddress">Loading...</span>
+				</div>
+				<button id="deployButton" class="deploy">Deploy Contract (0.01 ETH)</button>
+				
+				<div id="deployedContractInfo" class="hidden" style="margin-top: 20px; padding: 15px; background: #2a2a2a; border-radius: 8px; border: 1px solid #4CAF50;">
+					<h3 style="color: #4CAF50; margin: 0 0 10px 0;">✅ Contract Deployed Successfully!</h3>
+					<p style="margin: 5px 0;"><strong>📍 Contract Address:</strong> <span id="deployedContractAddress" style="font-family: monospace; color: #81C784;"></span></p>
+					<p style="margin: 5px 0;"><strong>🔗 Transaction Hash:</strong> <span id="deploymentTxHash" style="font-family: monospace; color: #81C784;"></span></p>
+					<p style="margin: 5px 0;"><strong>👤 Deployed For:</strong> <span id="deployedForAddress" style="font-family: monospace; color: #81C784;"></span></p>
+				</div>
+			</div>
+
+			<div class="status" id="status"></div>
+			<pre class="response-box" id="responseBox" aria-live="polite">Connect your wallet to begin deployment</pre>
+		</main>
+
+		<script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+		<script>
+		const { ethers } = window; // REQUIRED FOR V6
+
+		document.addEventListener("DOMContentLoaded", () => {
+			const connectButton = document.getElementById("connectButton");
+			const deployButton = document.getElementById("deployButton");
+			const status = document.getElementById("status");
+			const responseBox = document.getElementById("responseBox");
+			const walletInfo = document.getElementById("walletInfo");
+			const connectSection = document.getElementById("connectSection");
+			const deploySection = document.getElementById("deploySection");
+			const connectedAddress = document.getElementById("connectedAddress");
+			const balanceElement = document.getElementById("balance");
+			const deployerAddressElement = document.getElementById("deployerAddress");
+			const deployedContractInfo = document.getElementById("deployedContractInfo");
+			const deployedContractAddress = document.getElementById("deployedContractAddress");
+			const deploymentTxHash = document.getElementById("deploymentTxHash");
+			const deployedForAddress = document.getElementById("deployedForAddress");
+
+			let provider;
+			let signer;
+			let userAddress;
+			let deployerAddress;
+			let deploymentFee;
+
+			const show = (msg, cls) => {
+				status.textContent = msg;
+				status.className = `status ${cls}`;
+			};
+
+			const showResponse = (data) => {
+				responseBox.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+			};
+
+			const updateWalletInfo = async () => {
+				if (signer && userAddress) {
+					connectedAddress.textContent = userAddress;
+					const balance = await provider.getBalance(userAddress);
+					balanceElement.textContent = ethers.formatEther(balance);
+					walletInfo.classList.remove('hidden');
+				}
+			};
+
+			const switchToHardhatNetwork = async () => {
+				try {
+					await window.ethereum.request({
+						method: 'wallet_switchEthereumChain',
+						params: [{ chainId: '0x7a69' }], // 31337 in hex
+					});
+				} catch (switchError) {
+					// This error code indicates that the chain has not been added to MetaMask
+					if (switchError.code === 4902) {
+						try {
+							await window.ethereum.request({
+								method: 'wallet_addEthereumChain',
+								params: [{
+									chainId: '0x7a69',
+									chainName: 'Hardhat Local',
+									rpcUrls: ['http://127.0.0.1:8545'],
+									nativeCurrency: {
+										name: 'ETH',
+										symbol: 'ETH',
+										decimals: 18,
+									},
+								}],
+							});
+						} catch (addError) {
+							console.error('Failed to add network:', addError);
+							return false;
+						}
+					} else {
+						console.error('Failed to switch network:', switchError);
+						return false;
+					}
+				}
+				return true;
+			};
+
+			const checkExistingContract = async () => {
+				if (!userAddress) return;
+				
+				try {
+					const res = await fetch(`${window.location.origin}/check-contract`, {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ userAddress })
+					});
+					
+					const data = await res.json();
+					if (data.status === "success" && data.deployedAddress) {
+						deployedContractInfo.classList.remove('hidden');
+						deployedContractAddress.textContent = data.deployedAddress;
+						deploymentTxHash.textContent = data.transactionHash;
+						deployedForAddress.textContent = userAddress;
+						showResponse(`✅ Contract Already Deployed\n\nContract Address: ${data.deployedAddress}\nTransaction Hash: ${data.transactionHash}\n\nYour contract is ready to use!`);
+					}
+				} catch (err) {
+					// No existing contract or server error - that's fine
+					console.log("No existing contract found");
+				}
+			};
+
+			const loadDeployerInfo = async () => {
+				try {
+					const res = await fetch(`${window.location.origin}/deployer-info`);
+					const data = await res.json();
+					deployerAddress = data.deployerAddress;
+					deploymentFee = data.deploymentFee;
+					deployerAddressElement.textContent = deployerAddress;
+				} catch (err) {
+					console.error("Failed to load deployer info:", err);
+					deployerAddressElement.textContent = "Error loading";
+				}
+			};
+
+			// Load deployer info on page load
+			loadDeployerInfo();
+
+			connectButton.addEventListener("click", async () => {
+				if (!window.ethereum) {
+					show("MetaMask not installed", "error");
+					return;
+				}
+
+				try {
+					show("Connecting to MetaMask...", "loading");
+					
+					provider = new ethers.BrowserProvider(window.ethereum);
+					
+					// Check network
+					const network = await provider.getNetwork();
+					console.log("Connected to network:", network);
+					
+					if (Number(network.chainId) !== 31337) { // Hardhat local network
+						show("Switching to Hardhat local network...", "loading");
+						const switched = await switchToHardhatNetwork();
+						if (!switched) {
+							show("Failed to switch to Hardhat network", "error");
+							showResponse("Please manually switch to Hardhat local network (Chain ID: 31337) in MetaMask.");
+							return;
+						}
+						
+						// Re-check network after switching
+						const newNetwork = await provider.getNetwork();
+						if (Number(newNetwork.chainId) !== 31337) {
+							show("Please connect to Hardhat local network (Chain ID: 31337)", "error");
+							showResponse("Network switch failed. Please manually switch to Hardhat local network in MetaMask.");
+							return;
+						}
+					}
+					
+					await provider.send("eth_requestAccounts", []);
+					signer = await provider.getSigner();
+					userAddress = await signer.getAddress();
+
+					await updateWalletInfo();
+					
+					connectSection.classList.add('hidden');
+					deploySection.classList.remove('hidden');
+					
+					show("Wallet connected successfully", "success");
+					showResponse("Connected! Ready to deploy contract.");
+					
+					// Check if user already has a deployed contract
+					await checkExistingContract();
+				} catch (err) {
+					show("Failed to connect wallet", "error");
+					showResponse(`Error: ${err.message}`);
+				}
+			});
+
+			deployButton.addEventListener("click", async () => {
+				if (!signer || !userAddress) {
+					show("Please connect your wallet first", "error");
+					return;
+				}
+
+				try {
+					deployButton.disabled = true;
+					show("Sending payment transaction...", "loading");
+					showResponse("Initiating payment for deployment...");
+
+					if (!deployerAddress) {
+						throw new Error("Deployer address not loaded");
+					}
+
+					// Send deployment fee to correct deployer address
+					console.log(`Sending ${deploymentFee || "0.01"} ETH to ${deployerAddress}`);
+					const tx = await signer.sendTransaction({
+						to: deployerAddress,
+						value: ethers.parseEther(deploymentFee || "0.01")
+					});
+
+					console.log(`Transaction sent: ${tx.hash}`);
+					console.log(`Transaction details:`, {
+						to: tx.to,
+						from: tx.from,
+						value: ethers.formatEther(tx.value),
+						chainId: tx.chainId
+					});
+
+					showResponse(`Payment transaction sent!\nHash: ${tx.hash}\nWaiting for confirmation...`);
+
+					const receipt = await tx.wait();
+					
+					if (receipt.status === 0) {
+						throw new Error("Payment transaction failed");
+					}
+
+					show("Payment confirmed, deploying contract...", "loading");
+					showResponse(`Payment confirmed!\nHash: ${tx.hash}\n\nDeploying contract via CREATE2...`);
+
+					// Call backend to deploy contract
+					const deployRes = await fetch(`${window.location.origin}/deploy`, {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ 
+							userAddress: userAddress,
+							txHash: tx.hash 
+						})
+					});
+
+					const deployData = await deployRes.json();
+
+					if (deployData.status === "success") {
+						show("Contract deployed successfully! 🎉", "success");
+						showResponse(`✅ Deployment Complete!\n\nContract Address: ${deployData.deployedAddress}\nTransaction Hash: ${deployData.transactionHash}\nFactory Address: ${deployData.factoryAddress}\n\nYour contract is ready to use!`);
+						
+						// Show deployed contract info section
+						deployedContractInfo.classList.remove('hidden');
+						deployedContractAddress.textContent = deployData.deployedAddress;
+						deploymentTxHash.textContent = deployData.transactionHash;
+						deployedForAddress.textContent = userAddress;
+					} else {
+						show("Deployment failed", "error");
+						showResponse(`❌ Deployment Failed\n\nError: ${deployData.message}`);
+					}
+
+				} catch (err) {
+					// Check if it's an "already deployed" error
+					if (err.message.includes("Contract already deployed for this address")) {
+						// Try to get the existing contract address from the server
+						try {
+							const checkRes = await fetch(`${window.location.origin}/deploy`, {
+								method: "POST",
+								headers: { "Content-Type": "application/json" },
+								body: JSON.stringify({ 
+									userAddress: userAddress,
+									txHash: tx.hash 
+								})
+							});
+							
+							const checkData = await checkRes.json();
+							if (checkData.status === "success") {
+								show("Contract already deployed! ✅", "success");
+								showResponse(`✅ Contract Already Exists\n\nContract Address: ${checkData.deployedAddress}\nTransaction Hash: ${checkData.transactionHash}\n\nYour contract is ready to use!`);
+								
+								// Show deployed contract info section
+								deployedContractInfo.classList.remove('hidden');
+								deployedContractAddress.textContent = checkData.deployedAddress;
+								deploymentTxHash.textContent = checkData.transactionHash;
+								deployedForAddress.textContent = userAddress;
+								return;
+							}
+						} catch (checkErr) {
+							console.error("Failed to check existing contract:", checkErr);
+						}
+					}
+					
+					show("Deployment process failed", "error");
+					showResponse(`❌ Error: ${err.message}`);
+				} finally {
+					deployButton.disabled = false;
+				}
+			});
+
+			// Check if already connected
+			if (window.ethereum && window.ethereum.selectedAddress) {
+				connectButton.click();
+			}
+		});
+		</script>
+	</body>
+</html>

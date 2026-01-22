@@ -15,7 +15,8 @@
   "include": [
     "./scripts",
     "./test",
-    "./hardhat.config.ts"
+    "./hardhat.config.ts",
+    "./server.ts"
   ],
   "exclude": [
     "node_modules"

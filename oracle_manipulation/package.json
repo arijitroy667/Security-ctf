@@ -5,10 +5,14 @@
   "scripts": {
     "test": "hardhat test",
     "compile": "hardhat compile",
-    "deploy": "hardhat run scripts/deploy.ts"
+    "deploy": "hardhat run scripts/deploy.ts",
+    "deploy-create2": "hardhat run scripts/create2-deploy.ts",
+    "server": "node server.js",
+    "start": "npm run compile && npm run server"
   },
   "keywords": [],
   "author": "",
+  "type": "commonjs",
   "license": "ISC",
   "description": "Oracle Manipulation CTF - Smart Contract Security Challenge",
   "devDependencies": {
@@ -22,8 +26,9 @@
     "@typechain/ethers-v6": "^0.5.0",
     "@typechain/hardhat": "^9.0.0",
     "@types/chai": "^4.3.0",
+    "@types/express": "^5.0.6",
     "@types/mocha": "^10.0.0",
-    "@types/node": "^20.0.0",
+    "@types/node": "^20.19.30",
     "chai": "^4.3.0",
     "dotenv": "^16.0.0",
     "ethers": "^6.9.0",
@@ -35,6 +40,9 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.0.0"
+    "@openzeppelin/contracts": "^5.0.0",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0"
   }
 }
