@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connection Test</title>
+    <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <h1>Connection Test</h1>
+    <button id="testBtn">Test Connection</button>
+    <div id="output"></div>
+
+    <script>
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const output = document.getElementById('output');
+            output.innerHTML = '<div>Testing...</div>';
+            
+            try {
+                // Test 1: Check if MetaMask is available
+                if (typeof window.ethereum === 'undefined') {
+                    output.innerHTML = '<div style="color: red;">MetaMask not detected</div>';
+                    return;
+                }
+                output.innerHTML += '<div>✅ MetaMask detected</div>';
+                
+                // Test 2: Request accounts
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                output.innerHTML += '<div>✅ Accounts requested</div>';
+                
+                // Test 3: Create provider
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                output.innerHTML += '<div>✅ Provider created</div>';
+                
+                // Test 4: Get network
+                const network = await provider.getNetwork();
+                output.innerHTML += `<div>Network: ${network.name} (Chain ID: ${network.chainId})</div>`;
+                
+                // Test 5: Get signer
+                const signer = provider.getSigner();
+                const address = await signer.getAddress();
+                output.innerHTML += `<div>Signer: ${address}</div>`;
+                
+                // Test 6: Get balance
+                const balance = await provider.getBalance(address);
+                output.innerHTML += `<div>Balance: ${ethers.utils.formatEther(balance)} ETH</div>`;
+                
+                // Test 7: Simple contract call
+                const contractAddress = "0x0165878A594ca255338adfa4d48449f69242Eb8F";
+                const simpleABI = ["function currentEpoch() view returns (uint256)"];
+                const contract = new ethers.Contract(contractAddress, simpleABI, signer);
+                
+                const epoch = await contract.currentEpoch();
+                output.innerHTML += `<div>Contract epoch: ${epoch.toString()}</div>`;
+                
+                output.innerHTML += '<div style="color: green;">✅ All tests passed!</div>';
+                
+            } catch (error) {
+                output.innerHTML += `<div style="color: red;">❌ Error: ${error.message}</div>`;
+                console.error('Test error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

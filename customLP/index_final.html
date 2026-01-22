@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EpochLP CTF</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-4">EpochLP CTF</h1>
+            <p class="text-gray-300">Advanced Liquidity Pool Challenge</p>
+        </header>
+
+        <section class="mb-8">
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4">Contract Connection</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Contract Address</label>
+                        <input type="text" id="contractAddress" placeholder="0x..." 
+                               value="0x4c5859f0F772848b2D91F1D83E2Fe57935348029"
+                               class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg">  
+                    </div>
+                    <div class="flex space-x-4">
+                        <button id="connectWallet" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg">
+                            Connect Wallet
+                        </button>
+                        <button id="switchNetwork" class="px-6 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg">
+                            Switch to Hardhat
+                        </button>
+                        <button id="loadContract" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg">
+                            Load Contract
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4">Pool State</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-2">Current Epoch</h3>
+                        <p id="currentEpoch" class="text-2xl font-bold">-</p>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-2">Current Reserves</h3>
+                        <p class="text-sm">A: <span id="reserveA" class="font-bold">-</span></p>
+                        <p class="text-sm">B: <span id="reserveB" class="font-bold">-</span></p>
+                    </div>
+                    <div class="bg-red-900/30 border border-red-500 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-2 text-red-300">Pricing Reserves</h3>
+                        <p class="text-xs text-red-200">Uses epoch e-1</p>
+                        <p class="text-sm">A: <span id="pricingReserveA" class="font-bold">-</span></p>
+                        <p class="text-sm">B: <span id="pricingReserveB" class="font-bold">-</span></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4">Get Tokens</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-2">Get ALPHA Tokens</h3>
+                        <input type="number" id="getAmountA" placeholder="Amount" value="10000"
+                               class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded mb-2">
+                        <button id="getTokensA" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded">
+                            Get ALPHA Tokens
+                        </button>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-2">Get BETA Tokens</h3>
+                        <input type="number" id="getAmountB" placeholder="Amount" value="10000"
+                               class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded mb-2">
+                        <button id="getTokensB" class="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded">
+                            Get BETA Tokens
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4">Operations</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-2">Add Liquidity</h3>
+                        <input type="number" id="addAmountA" placeholder="Amount A" value="100"
+                               class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded mb-2">
+                        <input type="number" id="addAmountB" placeholder="Amount B" value="100"
+                               class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded mb-2">
+                        <button id="addLiquidity" class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 rounded">
+                            Add Liquidity
+                        </button>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-2">Swap</h3>
+                        <input type="number" id="swapAmount" placeholder="Amount" value="1"
+                               class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded mb-2">
+                        <button id="swapAforB" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded mb-2">
+                            Swap A → B
+                        </button>
+                        <button id="swapBforA" class="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded">
+                            Swap B → A
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div id="statusMessages" class="fixed bottom-4 right-4 space-y-2 max-w-md"></div>
+    </div>
+
+    <script>
+        let provider;
+        let signer;
+        let contract;
+        let tokenA;
+        let tokenB;
+
+        const contractABI = [
+            "function currentEpoch() view returns (uint256)",
+            "function getCurrentReserves() view returns (uint256, uint256)",
+            "function getPricingReserves() view returns (uint256, uint256)",
+            "function totalSupply() view returns (uint256)",
+            "function balanceOf(address) view returns (uint256)",
+            "function addLiquidity(uint256, uint256) returns (uint256)",
+            "function removeLiquidity(uint256) returns (uint256, uint256)",
+            "function swap(uint256, bool) returns (uint256)"
+        ];
+
+        const tokenABI = [
+            "function balanceOf(address) view returns (uint256)",
+            "function approve(address, uint256) returns (bool)",
+            "function allowance(address, address) view returns (uint256)",
+            "function transfer(address, uint256) returns (bool)"
+        ];
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('statusMessages');
+            const messageDiv = document.createElement('div');
+            
+            const colors = {
+                info: 'bg-blue-600',
+                success: 'bg-green-600',
+                error: 'bg-red-600'
+            };
+            
+            messageDiv.className = `${colors[type]} text-white px-4 py-2 rounded-lg shadow-lg transform transition-all duration-300 translate-x-0`;
+            messageDiv.textContent = message;
+            
+            statusDiv.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.style.transform = 'translateX(400px)';
+                setTimeout(() => messageDiv.remove(), 300);
+            }, 3000);
+        }
+
+        async function switchToHardhatNetwork() {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x7a69' }],
+                });
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [
+                                {
+                                    chainId: '0x7a69',
+                                    chainName: 'Hardhat Local',
+                                    rpcUrls: ['http://127.0.0.1:8545'],
+                                    nativeCurrency: {
+                                        name: 'ETH',
+                                        symbol: 'ETH',
+                                        decimals: 18,
+                                    },
+                                },
+                            ],
+                        });
+                    } catch (addError) {
+                        console.error('Failed to add Hardhat network:', addError);
+                        showStatus('Failed to add Hardhat network', 'error');
+                        return false;
+                    }
+                } else {
+                    console.error('Failed to switch to Hardhat network:', switchError);
+                    showStatus('Failed to switch to Hardhat network', 'error');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        document.getElementById('connectWallet').addEventListener('click', async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    signer = provider.getSigner();
+                    
+                    const network = await provider.getNetwork();
+                    if (network.chainId !== 31337) {
+                        showStatus('Please switch to Hardhat network (Chain ID: 31337) manually', 'error');
+                        showStatus('Or click "Switch to Hardhat" button below', 'info');
+                        return;
+                    }
+                    
+                    showStatus('Wallet connected to Hardhat network', 'success');
+                } catch (error) {
+                    showStatus('Failed to connect: ' + error.message, 'error');
+                }
+            } else {
+                showStatus('MetaMask not detected', 'error');
+            }
+        });
+
+        document.getElementById('switchNetwork').addEventListener('click', async () => {
+            const success = await switchToHardhatNetwork();
+            if (success) {
+                showStatus('Switched to Hardhat network successfully', 'success');
+            }
+        });
+
+        document.getElementById('loadContract').addEventListener('click', async () => {
+            const address = document.getElementById('contractAddress').value;
+            console.log('Loading contract at address:', address);
+            
+            if (!address || !ethers.utils.isAddress(address)) {
+                showStatus('Invalid address', 'error');
+                return;
+            }
+
+            try {
+                const network = await provider.getNetwork();
+                console.log('Current network:', network);
+                
+                if (network.chainId !== 31337) {
+                    showStatus(`Wrong network! Current: ${network.chainId}, Expected: 31337`, 'error');
+                    return;
+                }
+                
+                contract = new ethers.Contract(address, contractABI, signer);
+                console.log('Contract object created:', contract.address);
+                
+                const epoch = await contract.currentEpoch();
+                console.log('Contract epoch:', epoch.toString());
+                
+                const tokenAAddress = "0x36C02dA8a0983159322a80FFE9F24b1acfF8B570";
+                const tokenBAddress = "0x809d550fca64d94Bd9F66E60752A544199cfAC3D";
+                
+                tokenA = new ethers.Contract(tokenAAddress, tokenABI, signer);
+                tokenB = new ethers.Contract(tokenBAddress, tokenABI, signer);
+                
+                console.log('Contract loaded successfully at:', contract.address);
+                showStatus('Contract and tokens loaded successfully', 'success');
+                updateDisplay();
+            } catch (error) {
+                console.error('Contract loading error:', error);
+                showStatus('Failed to load contract: ' + error.message, 'error');
+                contract = null;
+            }
+        });
+
+        document.getElementById('getTokensA').addEventListener('click', async () => {
+            if (!tokenA) {
+                showStatus('Load contract first', 'error');
+                return;
+            }
+
+            const amount = ethers.utils.parseEther(document.getElementById('getAmountA').value || '0');
+            
+            try {
+                const deployerAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+                const deployerSigner = provider.getSigner(deployerAddress);
+                const deployerTokenA = tokenA.connect(deployerSigner);
+                
+                showStatus('Getting ALPHA tokens...', 'info');
+                const tx = await deployerTokenA.transfer(await signer.getAddress(), amount);
+                await tx.wait();
+                showStatus('ALPHA tokens received!', 'success');
+            } catch (error) {
+                showStatus('Failed to get tokens: ' + error.message, 'error');
+            }
+        });
+
+        document.getElementById('getTokensB').addEventListener('click', async () => {
+            if (!tokenB) {
+                showStatus('Load contract first', 'error');
+                return;
+            }
+
+            const amount = ethers.utils.parseEther(document.getElementById('getAmountB').value || '0');
+            
+            try {
+                const deployerAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+                const deployerSigner = provider.getSigner(deployerAddress);
+                const deployerTokenB = tokenB.connect(deployerSigner);
+                
+                showStatus('Getting BETA tokens...', 'info');
+                const tx = await deployerTokenB.transfer(await signer.getAddress(), amount);
+                await tx.wait();
+                showStatus('BETA tokens received!', 'success');
+            } catch (error) {
+                showStatus('Failed to get tokens: ' + error.message, 'error');
+            }
+        });
+
+        async function updateDisplay() {
+            if (!contract) return;
+
+            try {
+                const currentEpoch = await contract.currentEpoch();
+                const [reserveA, reserveB] = await contract.getCurrentReserves();
+                const [pricingReserveA, pricingReserveB] = await contract.getPricingReserves();
+                
+                document.getElementById('currentEpoch').textContent = currentEpoch.toString();
+                document.getElementById('reserveA').textContent = ethers.utils.formatEther(reserveA);
+                document.getElementById('reserveB').textContent = ethers.utils.formatEther(reserveB);
+                document.getElementById('pricingReserveA').textContent = ethers.utils.formatEther(pricingReserveA);
+                document.getElementById('pricingReserveB').textContent = ethers.utils.formatEther(pricingReserveB);
+            } catch (error) {
+                console.error('Update error:', error);
+            }
+        }
+
+        document.getElementById('addLiquidity').addEventListener('click', async () => {
+            if (!contract || !tokenA || !tokenB) {
+                showStatus('Load contract first', 'error');
+                return;
+            }
+
+            const amountA = ethers.utils.parseEther(document.getElementById('addAmountA').value || '0');
+            const amountB = ethers.utils.parseEther(document.getElementById('addAmountB').value || '0');
+
+            if (amountA.eq(0) || amountB.eq(0)) {
+                showStatus('Amounts must be > 0', 'error');
+                return;
+            }
+
+            try {
+                const allowanceA = await tokenA.allowance(await signer.getAddress(), contract.address);
+                const allowanceB = await tokenB.allowance(await signer.getAddress(), contract.address);
+                
+                if (allowanceA.lt(amountA)) {
+                    showStatus('Approving TokenA...', 'info');
+                    const approveTx = await tokenA.approve(contract.address, amountA);
+                    await approveTx.wait();
+                }
+                
+                if (allowanceB.lt(amountB)) {
+                    showStatus('Approving TokenB...', 'info');
+                    const approveTx = await tokenB.approve(contract.address, amountB);
+                    await approveTx.wait();
+                }
+                
+                showStatus('Adding liquidity...', 'info');
+                const tx = await contract.addLiquidity(amountA, amountB);
+                await tx.wait();
+                showStatus('Liquidity added', 'success');
+                updateDisplay();
+            } catch (error) {
+                showStatus('Failed: ' + error.message, 'error');
+            }
+        });
+
+        document.getElementById('swapAforB').addEventListener('click', async () => {
+            if (!contract) {
+                showStatus('Load contract first', 'error');
+                return;
+            }
+
+            const amount = ethers.utils.parseEther(document.getElementById('swapAmount').value || '0');
+            console.log('Swapping A for B, amount:', amount.toString());
+            console.log('Contract address:', contract.address);
+
+            if (amount.eq(0)) {
+                showStatus('Amount must be > 0', 'error');
+                return;
+            }
+
+            try {
+                showStatus('Swapping A → B...', 'info');
+                const tx = await contract.swap(amount, true);
+                console.log('Transaction hash:', tx.hash);
+                await tx.wait();
+                showStatus('Swapped A → B', 'success');
+                updateDisplay();
+            } catch (error) {
+                console.error('Swap error:', error);
+                showStatus('Failed: ' + error.message, 'error');
+            }
+        });
+
+        document.getElementById('swapBforA').addEventListener('click', async () => {
+            if (!contract) {
+                showStatus('Load contract first', 'error');
+                return;
+            }
+
+            const amount = ethers.utils.parseEther(document.getElementById('swapAmount').value || '0');
+
+            if (amount.eq(0)) {
+                showStatus('Amount must be > 0', 'error');
+                return;
+            }
+
+            try {
+                showStatus('Swapping B → A...', 'info');
+                const tx = await contract.swap(amount, false);
+                await tx.wait();
+                showStatus('Swapped B → A', 'success');
+                updateDisplay();
+            } catch (error) {
+                showStatus('Failed: ' + error.message, 'error');
+            }
+        });
+
+        setInterval(updateDisplay, 5000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 EpochLP CTF Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <style>
+        @keyframes pulse-border {
+            0%, 100% { border-color: rgb(239 68 68); }
+            50% { border-color: rgb(248 113 113); }
+        }
+        .vulnerable-border {
+            animation: pulse-border 2s ease-in-out infinite;
+        }
+        .epoch-transition {
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+            background-size: 200% 200%;
+            animation: gradient 3s ease infinite;
+        }
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-red-500 to-purple-600 bg-clip-text text-transparent">
+                🎯 EpochLP CTF Challenge
+            </h1>
+            <p class="text-xl text-gray-300">Advanced Liquidity Pool with Epoch Desynchronization</p>
+            <div class="mt-4 p-4 bg-red-900/30 border border-red-500 rounded-lg vulnerable-border">
+                <p class="text-red-300 font-semibold">⚠️ CRITICAL VULNERABILITY DETECTED</p>
+                <p class="text-sm text-red-200 mt-1">Epoch-based state desynchronization creates arbitrage opportunities</p>
+            </div>
+        </header>
+
+        <!-- Contract Input -->
+        <section class="mb-8">
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 class="text-2xl font-bold mb-4 text-blue-400">🔗 Contract Connection</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">EpochLP Contract Address</label>
+                        <input type="text" id="contractAddress" placeholder="0x..." 
+                               class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:border-blue-500 focus:outline-none">
+                    </div>
+                    <div class="flex space-x-4">
+                        <button id="connectWallet" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition">
+                            Connect Wallet
+                        </button>
+                        <button id="loadContract" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition">
+                            Load Contract
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pool State Display -->
+        <section class="mb-8">
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 class="text-2xl font-bold mb-4 text-green-400">📊 Pool State Analysis</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Current Epoch -->
+                    <div class="bg-gray-700 rounded-lg p-4 epoch-transition">
+                        <h3 class="text-lg font-semibold mb-2">Current Epoch</h3>
+                        <p id="currentEpoch" class="text-3xl font-bold text-white">-</p>
+                        <p class="text-sm text-gray-300 mt-1">Block: <span id="currentBlock">-</span></p>
+                    </div>
+                    
+                    <!-- Current Reserves -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-2">Current Reserves</h3>
+                        <p class="text-sm">ALPHA: <span id="reserveA" class="font-bold">-</span></p>
+                        <p class="text-sm">BETA: <span id="reserveB" class="font-bold">-</span></p>
+                    </div>
+                    
+                    <!-- Pricing Reserves (VULNERABILITY) -->
+                    <div class="bg-red-900/30 border border-red-500 rounded-lg p-4 vulnerable-border">
+                        <h3 class="text-lg font-semibold mb-2 text-red-300">Pricing Reserves</h3>
+                        <p class="text-xs text-red-200 mb-1">⚠️ Uses epoch e-1</p>
+                        <p class="text-sm">ALPHA: <span id="pricingReserveA" class="font-bold">-</span></p>
+                        <p class="text-sm">BETA: <span id="pricingReserveB" class="font-bold">-</span></p>
+                    </div>
+                    
+                    <!-- Your LP Balance -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-2">Your LP Tokens</h3>
+                        <p id="lpBalance" class="text-2xl font-bold">-</p>
+                    </div>
+                    
+                    <!-- Total Supply -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-2">Total LP Supply</h3>
+                        <p id="totalSupply" class="text-2xl font-bold">-</p>
+                    </div>
+                    
+                    <!-- User Balances -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-2">Your Token Balances</h3>
+                        <p class="text-sm">ALPHA: <span id="userBalanceA" class="font-bold">-</span></p>
+                        <p class="text-sm">BETA: <span id="userBalanceB" class="font-bold">-</span></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pool Operations -->
+        <section class="mb-8">
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 class="text-2xl font-bold mb-4 text-yellow-400">⚡ Pool Operations</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Add Liquidity -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-4 text-green-400">Add Liquidity</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm mb-1">ALPHA Amount</label>
+                                <input type="number" id="addAmountA" placeholder="0" 
+                                       class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded focus:border-green-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-1">BETA Amount</label>
+                                <input type="number" id="addAmountB" placeholder="0" 
+                                       class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded focus:border-green-500 focus:outline-none">
+                            </div>
+                            <button id="addLiquidity" class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-semibold transition">
+                                Add Liquidity
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Remove Liquidity -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-4 text-red-400">Remove Liquidity</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm mb-1">LP Token Amount</label>
+                                <input type="number" id="removeAmount" placeholder="0" 
+                                       class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded focus:border-red-500 focus:outline-none">
+                            </div>
+                            <button id="removeLiquidity" class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 rounded font-semibold transition">
+                                Remove Liquidity
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Swap A for B -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-4 text-blue-400">Swap ALPHA → BETA</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm mb-1">ALPHA Amount</label>
+                                <input type="number" id="swapAmountA" placeholder="0" 
+                                       class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded focus:border-blue-500 focus:outline-none">
+                            </div>
+                            <button id="swapAforB" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-semibold transition">
+                                Swap A → B
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Swap B for A -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold mb-4 text-purple-400">Swap BETA → ALPHA</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm mb-1">BETA Amount</label>
+                                <input type="number" id="swapAmountB" placeholder="0" 
+                                       class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded focus:border-purple-500 focus:outline-none">
+                            </div>
+                            <button id="swapBforA" class="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded font-semibold transition">
+                                Swap B → A
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Epoch Analysis -->
+        <section class="mb-8">
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 class="text-2xl font-bold mb-4 text-orange-400">🔍 Epoch Analysis</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Analyze Epoch</label>
+                        <div class="flex space-x-4">
+                            <input type="number" id="analyzeEpoch" placeholder="Epoch number" 
+                                   class="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:border-orange-500 focus:outline-none">
+                            <button id="analyzeEpochBtn" class="px-6 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg font-semibold transition">
+                                Analyze
+                            </button>
+                        </div>
+                    </div>
+                    <div id="epochAnalysis" class="bg-gray-700 rounded-lg p-4 hidden">
+                        <!-- Epoch analysis results will appear here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Hints Section -->
+        <section class="mb-8">
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 class="text-2xl font-bold mb-4 text-cyan-400">💡 CTF Hints</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="font-semibold text-cyan-300 mb-2">🕰️ Time is money</h3>
+                        <p class="text-sm text-gray-300">Consider the temporal aspect of operations</p>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="font-semibold text-cyan-300 mb-2">🔀 Look between the epochs</h3>
+                        <p class="text-sm text-gray-300">Cross-epoch analysis reveals inconsistencies</p>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="font-semibold text-cyan-300 mb-2">💰 Price is relative</h3>
+                        <p class="text-sm text-gray-300">Valuation asymmetry creates opportunities</p>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="font-semibold text-cyan-300 mb-2">⚡ State transitions matter</h3>
+                        <p class="text-sm text-gray-300">Epoch boundaries are critical moments</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Status Messages -->
+        <div id="statusMessages" class="fixed bottom-4 right-4 space-y-2 max-w-md">
+            <!-- Status messages will appear here -->
+        </div>
+    </div>
+
+    <script>
+        let provider;
+        let signer;
+        let contract;
+        let tokenA, tokenB;
+
+        // Contract ABI (simplified)
+        const contractABI = [
+            "function currentEpoch() view returns (uint256)",
+            "function getCurrentReserves() view returns (uint256, uint256)",
+            "function getPricingReserves() view returns (uint256, uint256)",
+            "function getEpochData(uint256) view returns (uint256, uint256, uint256)",
+            "function totalSupply() view returns (uint256)",
+            "function balanceOf(address) view returns (uint256)",
+            "function addLiquidity(uint256, uint256) returns (uint256)",
+            "function removeLiquidity(uint256) returns (uint256, uint256)",
+            "function swap(uint256, bool) returns (uint256)",
+            "event EpochChanged(uint256 indexed newEpoch, uint256 timestamp)",
+            "event LiquidityAdded(address indexed user, uint256 amountA, uint256 amountB, uint256 liquidity, uint256 epoch)",
+            "event LiquidityRemoved(address indexed user, uint256 amountA, uint256 amountB, uint256 liquidity, uint256 epoch)",
+            "event Swap(address indexed user, uint256 amountIn, uint256 amountOut, bool aForB, uint256 epoch)"
+        ];
+
+        const tokenABI = [
+            "function balanceOf(address) view returns (uint256)",
+            "function approve(address, uint256) returns (bool)",
+            "function transfer(address, uint256) returns (bool)",
+            "function transferFrom(address, address, uint256) returns (bool)",
+            "function decimals() view returns (uint8)"
+        ];
+
+        // Status message system
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('statusMessages');
+            const messageDiv = document.createElement('div');
+            
+            const colors = {
+                info: 'bg-blue-600',
+                success: 'bg-green-600',
+                warning: 'bg-yellow-600',
+                error: 'bg-red-600'
+            };
+            
+            messageDiv.className = `${colors[type]} text-white px-4 py-2 rounded-lg shadow-lg transform transition-all duration-300 translate-x-0`;
+            messageDiv.textContent = message;
+            
+            statusDiv.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.style.transform = 'translateX(400px)';
+                setTimeout(() => messageDiv.remove(), 300);
+            }, 5000);
+        }
+
+        // Connect wallet
+        document.getElementById('connectWallet').addEventListener('click', async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    signer = provider.getSigner();
+                    showStatus('Wallet connected successfully', 'success');
+                    updateDisplay();
+                } catch (error) {
+                    showStatus('Failed to connect wallet: ' + error.message, 'error');
+                }
+            } else {
+                showStatus('MetaMask not detected', 'error');
+            }
+        });
+
+        // Load contract
+        document.getElementById('loadContract').addEventListener('click', async () => {
+            const address = document.getElementById('contractAddress').value;
+            if (!address || !ethers.utils.isAddress(address)) {
+                showStatus('Invalid contract address', 'error');
+                return;
+            }
+
+            try {
+                contract = new ethers.Contract(address, contractABI, signer);
+                
+                // Try to get token addresses (this would need to be added to contract)
+                // For now, we'll assume standard tokens
+                showStatus('Contract loaded successfully', 'success');
+                updateDisplay();
+            } catch (error) {
+                showStatus('Failed to load contract: ' + error.message, 'error');
+            }
+        });
+
+        // Update display
+        async function updateDisplay() {
+            if (!contract || !signer) return;
+
+            try {
+                const userAddress = await signer.getAddress();
+                
+                // Get contract state
+                const currentEpoch = await contract.currentEpoch();
+                const [reserveA, reserveB] = await contract.getCurrentReserves();
+                const [pricingReserveA, pricingReserveB] = await contract.getPricingReserves();
+                const totalSupply = await contract.totalSupply();
+                const lpBalance = await contract.balanceOf(userAddress);
+                
+                // Update display
+                document.getElementById('currentEpoch').textContent = currentEpoch.toString();
+                document.getElementById('currentBlock').textContent = await provider.getBlockNumber();
+                document.getElementById('reserveA').textContent = ethers.utils.formatEther(reserveA);
+                document.getElementById('reserveB').textContent = ethers.utils.formatEther(reserveB);
+                document.getElementById('pricingReserveA').textContent = ethers.utils.formatEther(pricingReserveA);
+                document.getElementById('pricingReserveB').textContent = ethers.utils.formatEther(pricingReserveB);
+                document.getElementById('totalSupply').textContent = ethers.utils.formatEther(totalSupply);
+                document.getElementById('lpBalance').textContent = ethers.utils.formatEther(lpBalance);
+                
+            } catch (error) {
+                console.error('Update display error:', error);
+            }
+        }
+
+        // Add liquidity
+        document.getElementById('addLiquidity').addEventListener('click', async () => {
+            if (!contract) {
+                showStatus('Please load contract first', 'error');
+                return;
+            }
+
+            const amountA = ethers.utils.parseEther(document.getElementById('addAmountA').value || '0');
+            const amountB = ethers.utils.parseEther(document.getElementById('addAmountB').value || '0');
+
+            if (amountA.eq(0) || amountB.eq(0)) {
+                showStatus('Amounts must be greater than 0', 'error');
+                return;
+            }
+
+            try {
+                showStatus('Adding liquidity...', 'info');
+                const tx = await contract.addLiquidity(amountA, amountB);
+                await tx.wait();
+                showStatus('Liquidity added successfully', 'success');
+                updateDisplay();
+            } catch (error) {
+                showStatus('Failed to add liquidity: ' + error.message, 'error');
+            }
+        });
+
+        // Remove liquidity
+        document.getElementById('removeLiquidity').addEventListener('click', async () => {
+            if (!contract) {
+                showStatus('Please load contract first', 'error');
+                return;
+            }
+
+            const amount = ethers.utils.parseEther(document.getElementById('removeAmount').value || '0');
+
+            if (amount.eq(0)) {
+                showStatus('Amount must be greater than 0', 'error');
+                return;
+            }
+
+            try {
+                showStatus('Removing liquidity...', 'info');
+                const tx = await contract.removeLiquidity(amount);
+                await tx.wait();
+                showStatus('Liquidity removed successfully', 'success');
+                updateDisplay();
+            } catch (error) {
+                showStatus('Failed to remove liquidity: ' + error.message, 'error');
+            }
+        });
+
+        // Swap functions
+        document.getElementById('swapAforB').addEventListener('click', async () => {
+            if (!contract) {
+                showStatus('Please load contract first', 'error');
+                return;
+            }
+
+            const amount = ethers.utils.parseEther(document.getElementById('swapAmountA').value || '0');
+
+            if (amount.eq(0)) {
+                showStatus('Amount must be greater than 0', 'error');
+                return;
+            }
+
+            try {
+                showStatus('Swapping A → B...', 'info');
+                const tx = await contract.swap(amount, true);
+                await tx.wait();
+                showStatus('Swap completed successfully', 'success');
+                updateDisplay();
+            } catch (error) {
+                showStatus('Failed to swap: ' + error.message, 'error');
+            }
+        });
+
+        document.getElementById('swapBforA').addEventListener('click', async () => {
+            if (!contract) {
+                showStatus('Please load contract first', 'error');
+                return;
+            }
+
+            const amount = ethers.utils.parseEther(document.getElementById('swapAmountB').value || '0');
+
+            if (amount.eq(0)) {
+                showStatus('Amount must be greater than 0', 'error');
+                return;
+            }
+
+            try {
+                showStatus('Swapping B → A...', 'info');
+                const tx = await contract.swap(amount, false);
+                await tx.wait();
+                showStatus('Swap completed successfully', 'success');
+                updateDisplay();
+            } catch (error) {
+                showStatus('Failed to swap: ' + error.message, 'error');
+            }
+        });
+
+        // Analyze epoch
+        document.getElementById('analyzeEpochBtn').addEventListener('click', async () => {
+            if (!contract) {
+                showStatus('Please load contract first', 'error');
+                return;
+            }
+
+            const epoch = document.getElementById('analyzeEpoch').value;
+            if (!epoch) {
+                showStatus('Please enter an epoch number', 'error');
+                return;
+            }
+
+            try {
+                const [reserveA, reserveB, liquidity] = await contract.getEpochData(epoch);
+                const analysisDiv = document.getElementById('epochAnalysis');
+                
+                analysisDiv.innerHTML = `
+                    <h4 class="font-semibold text-orange-300 mb-2">Epoch ${epoch} Analysis</h4>
+                    <div class="space-y-2 text-sm">
+                        <p>Reserve A: ${ethers.utils.formatEther(reserveA)}</p>
+                        <p>Reserve B: ${ethers.utils.formatEther(reserveB)}</p>
+                        <p>Total Liquidity: ${ethers.utils.formatEther(liquidity)}</p>
+                    </div>
+                `;
+                
+                analysisDiv.classList.remove('hidden');
+                showStatus('Epoch analysis complete', 'success');
+            } catch (error) {
+                showStatus('Failed to analyze epoch: ' + error.message, 'error');
+            }
+        });
+
+        // Auto-update display every 5 seconds
+        setInterval(updateDisplay, 5000);
+    </script>
+</body>
+</html>
